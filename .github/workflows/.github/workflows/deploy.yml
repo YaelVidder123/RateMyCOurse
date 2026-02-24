@@ -1,0 +1,38 @@
+# GitHub Action to deploy RateMyCourse directly to AWS EC2
+name: Deploy RateMyCourse
+
+on:
+  push:
+    branches:
+      - main # Runs whenever you save changes to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_IP }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Enter the project directory in the cloud
+            cd ~/RateMyCOurse
+            
+            # Pull the latest code updates from GitHub
+            git pull origin main
+            
+            # Install dependencies and build the React app
+            npm install
+            npm run build
+            
+            # Copy the fresh build to the web server folder
+            sudo rm -rf /var/www/html/*
+            sudo cp -r dist/* /var/www/html/
+            
+            # Restart Nginx to apply all changes
+            sudo systemctl restart nginx
